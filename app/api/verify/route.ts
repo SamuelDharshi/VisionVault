@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TestNetWallet } from 'mainnet-js';
+import { TestNetWallet, NFTCapability, TokenGenesisRequest } from 'mainnet-js';
 
 // ── AI Vision: calls Hugging Face's free Inference API ─────────────────────
 // Model: Salesforce/blip-image-captioning-large (free, no quota issues)
@@ -9,41 +9,31 @@ async function verifyImageWithAI(base64Image: string, mimeType: string, prompt: 
   // Convert base64 to binary blob
   const binaryStr = Buffer.from(base64Image, 'base64');
 
-  // Step 1: Get image caption from BLIP
-  const captionRes = await fetch(
-    'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': mimeType,
-        ...(hfToken ? { Authorization: `Bearer ${hfToken}` } : {}),
-      },
-      body: binaryStr,
-    }
-  );
+  const fetchCaption = async () => {
+    const res = await fetch(
+      'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': mimeType,
+          ...(hfToken ? { Authorization: `Bearer ${hfToken}` } : {}),
+        },
+        body: binaryStr,
+      }
+    );
+    return res;
+  };
+
+  let captionRes = await fetchCaption();
+
+  // If model is loading (503), wait 8s and retry once
+  if (captionRes.status === 503) {
+    await new Promise(r => setTimeout(r, 8000));
+    captionRes = await fetchCaption();
+  }
 
   if (!captionRes.ok) {
-    const errText = await captionRes.text();
-    // If model is loading (503), wait and retry once
-    if (captionRes.status === 503) {
-      await new Promise(r => setTimeout(r, 8000));
-      const retry = await fetch(
-        'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': mimeType,
-            ...(hfToken ? { Authorization: `Bearer ${hfToken}` } : {}),
-          },
-          body: binaryStr,
-        }
-      );
-      if (!retry.ok) throw new Error(`HF API error: ${await retry.text()}`);
-      const retryData = await retry.json() as { generated_text?: string }[];
-      const caption = retryData?.[0]?.generated_text ?? '';
-      return matchCaption(caption, prompt);
-    }
-    throw new Error(`HF API error: ${errText}`);
+    throw new Error(`HF API error (${captionRes.status}): ${await captionRes.text()}`);
   }
 
   const data = await captionRes.json() as { generated_text?: string }[];
@@ -66,6 +56,13 @@ function matchCaption(caption: string, prompt: string): boolean {
   return score >= 0.3; // 30% keyword match = pass
 }
 
+// ── Encode badge name as NFT commitment (hex, max 40 bytes) ─────────────────
+function badgeToCommitment(badge: string): string {
+  // Encode badge name as UTF-8 hex, max 40 bytes
+  const bytes = Buffer.from(badge.slice(0, 40), 'utf-8');
+  return bytes.toString('hex');
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -73,6 +70,7 @@ export async function POST(req: NextRequest) {
     const prompt = formData.get('prompt') as string;
     const userAddress = formData.get('bchAddress') as string;
     const rewardBCH = parseFloat((formData.get('rewardBCH') as string) || '0.005');
+    const badgeName = (formData.get('badgeName') as string) || 'VisionVault Badge';
 
     if (!file || !prompt || !userAddress) {
       return NextResponse.json(
@@ -102,54 +100,84 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false });
     }
 
-    // ── 4. AI said YES → send BCH dust reward ───────────────────────────────
+    // ── 4. AI said YES → send BCH + mint NFT badge ────────────────────────
     const seed = process.env.SPONSOR_WALLET_SEED;
     if (!seed) {
       return NextResponse.json(
-        { success: true, error: 'Sponsor wallet not configured (SPONSOR_WALLET_SEED missing).' },
+        {
+          success: true,
+          error: 'Sponsor wallet not configured (SPONSOR_WALLET_SEED missing).',
+          paymentTxId: null,
+          nftTxId: null,
+        },
         { status: 200 }
       );
     }
 
+    let paymentTxId: string | null = null;
+    let nftTxId: string | null = null;
+    const warnings: string[] = [];
+
+    // ── Step A: Send BCH reward ─────────────────────────────────────────────
     try {
       const sponsorWallet = await TestNetWallet.fromSeed(seed);
-      const balance = await sponsorWallet.getBalance();
+      // getBalance returns bigint in satoshis for TestNetWallet
+      const balanceSats = await sponsorWallet.getBalance() as bigint;
+      const rewardSats = BigInt(Math.round(rewardBCH * 1e8));
+      const sponsorAddr = sponsorWallet.getDepositAddress();
+      console.log(`[VisionVault] Sponsor balance: ${balanceSats} sats (${Number(balanceSats) / 1e8} BCH)`);
 
-      if ((balance as unknown as number) < rewardBCH) {
-        return NextResponse.json({
-          success: true,
-          error: `Vault only has ${balance} BCH — not enough to pay ${rewardBCH} BCH reward. Fund ${await sponsorWallet.getDepositAddress()} at tbch.googol.cash`,
-        });
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const tx = await (sponsorWallet.send as any)([
-        { cashaddr: userAddress, value: rewardBCH, unit: 'bch' },
-      ]);
-
-      return NextResponse.json({ success: true, txid: tx.txId });
-    } catch (paymentError: unknown) {
-      let errMsg = paymentError instanceof Error ? paymentError.message : String(paymentError);
-
-      try {
-        const sponsorWallet = await TestNetWallet.fromSeed(seed);
+      if (balanceSats < rewardSats + BigInt(10000)) { // keep 10k sats buffer for fees
+        warnings.push(
+          `Sponsor vault has ${Number(balanceSats) / 1e8} BCH — not enough to pay ${rewardBCH} BCH reward. Fund ${sponsorAddr} at tbch.googol.cash`
+        );
+      } else {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const fallbackTx = await (sponsorWallet.send as any)([
-          { cashaddr: userAddress, value: 0.0001, unit: 'bch' },
+        const tx = await (sponsorWallet.send as any)([
+          { cashaddr: userAddress, value: rewardBCH, unit: 'bch' },
         ]);
-        return NextResponse.json({
-          success: true,
-          txid: fallbackTx.txId,
-          error: `Paid BCH (NFT failed): ${errMsg}`,
-        });
-      } catch (fallbackError: unknown) {
-        errMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
-        return NextResponse.json({
-          success: true,
-          error: `Verification passed but payment failed: ${errMsg}`,
-        });
+        paymentTxId = (tx as { txId?: string }).txId ?? null;
+        console.log(`[VisionVault] BCH payment sent: ${paymentTxId}`);
       }
+    } catch (payErr) {
+      const msg = payErr instanceof Error ? payErr.message : String(payErr);
+      console.error('[VisionVault] BCH payment error:', msg);
+      warnings.push(`BCH payment failed: ${msg}`);
     }
+
+    // ── Step B: Mint CashToken NFT badge via tokenGenesis ───────────────────
+    // tokenGenesis creates a brand-new token category and sends the NFT to `cashaddr`
+    try {
+      const mintWallet = await TestNetWallet.fromSeed(seed);
+      const commitment = badgeToCommitment(badgeName);
+
+      const genesisReq = new TokenGenesisRequest({
+        // No fungible amount — pure NFT
+        nft: {
+          capability: NFTCapability.none, // immutable NFT badge
+          commitment,
+        },
+        cashaddr: userAddress,   // send the NFT directly to the winner
+        value: BigInt(1000),    // 1000 satoshis dust alongside the token
+      });
+
+      const mintTx = await mintWallet.tokenGenesis(genesisReq);
+      nftTxId = mintTx?.txId ?? null;
+      console.log(`[VisionVault] NFT minted (category: ${mintTx?.categories?.[0] ?? 'unknown'}): ${nftTxId}`);
+    } catch (nftErr) {
+      const msg = nftErr instanceof Error ? nftErr.message : String(nftErr);
+      console.error('[VisionVault] NFT mint error:', msg);
+      warnings.push(`NFT badge mint failed (BCH reward still sent): ${msg}`);
+    }
+
+    return NextResponse.json({
+      success: true,
+      paymentTxId,
+      nftTxId,
+      // Legacy field so old code that reads data.txid still works
+      txid: paymentTxId,
+      warning: warnings.length > 0 ? warnings.join(' | ') : undefined,
+    });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
     return NextResponse.json({ error: `Internal server error: ${msg}` }, { status: 500 });

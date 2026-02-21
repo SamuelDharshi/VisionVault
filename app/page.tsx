@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils';
 import { Bounty, User, SAMPLE_BOUNTIES, CRYPTO_EVENTS, SAMPLE_TRANSACTIONS } from '@/lib/types';
 
 type SubmitStatus = 'idle' | 'loading' | 'success' | 'error';
+type MintStep = 'ai' | 'bch' | 'nft' | 'done';
 
 export default function VisionVaultApp() {
   const [user, setUser] = useState<User>({
@@ -54,8 +55,10 @@ export default function VisionVaultApp() {
   const [bchAddress, setBchAddress] = useState('');
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const [txId, setTxId] = useState('');
+  const [paymentTxId, setPaymentTxId] = useState('');
+  const [nftTxId, setNftTxId] = useState('');
   const [paymentWarning, setPaymentWarning] = useState('');
+  const [mintStep, setMintStep] = useState<MintStep>('ai');
 
   // ─── New tab state ────────────────────────────────────────────────────────
   const [walletAddress, setWalletAddress] = useState('');
@@ -124,9 +127,11 @@ export default function VisionVaultApp() {
     setUploadedFile(null);
     setSubmitStatus('idle');
     setErrorMessage('');
-    setTxId('');
+    setPaymentTxId('');
+    setNftTxId('');
     setPaymentWarning('');
     setBchAddress('');
+    setMintStep('ai');
   };
 
   const submitProof = async (e: React.FormEvent) => {
@@ -135,8 +140,10 @@ export default function VisionVaultApp() {
 
     setSubmitStatus('loading');
     setErrorMessage('');
-    setTxId('');
+    setPaymentTxId('');
+    setNftTxId('');
     setPaymentWarning('');
+    setMintStep('ai');
 
     try {
       const formData = new FormData();
@@ -144,15 +151,24 @@ export default function VisionVaultApp() {
       formData.append('prompt', selectedBounty.prompt);
       formData.append('bchAddress', bchAddress);
       formData.append('rewardBCH', selectedBounty.rewardBCH.toString());
+      formData.append('badgeName', selectedBounty.rewardBadge);
 
+      // Simulate step progression while waiting for the API
+      const stepTimer1 = setTimeout(() => setMintStep('bch'), 4000);
+      const stepTimer2 = setTimeout(() => setMintStep('nft'), 9000);
 
       const res = await fetch('/api/verify', { method: 'POST', body: formData });
+      clearTimeout(stepTimer1);
+      clearTimeout(stepTimer2);
+
       const data = await res.json();
 
       if (data.success) {
+        setMintStep('done');
         setSubmitStatus('success');
-        setTxId(data.txid ?? '');
-        if (data.error) setPaymentWarning(data.error);
+        setPaymentTxId(data.paymentTxId ?? data.txid ?? '');
+        setNftTxId(data.nftTxId ?? '');
+        if (data.warning) setPaymentWarning(data.warning);
 
         confetti({
           particleCount: 150,
@@ -825,6 +841,85 @@ export default function VisionVaultApp() {
               </button>
 
               <AnimatePresence mode="wait">
+                {/* ── LOADING / MINTING STEPS STATE ── */}
+                {submitStatus === 'loading' && (
+                  <motion.div
+                    key="minting"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex flex-col items-center py-10 gap-6 text-center"
+                  >
+                    {/* Animated ring */}
+                    <div className="relative w-24 h-24">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                        className="absolute inset-0 rounded-full border-4 border-[#CCFF00]/20 border-t-[#CCFF00]"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-3xl">
+                          {mintStep === 'ai' ? '🤖' : mintStep === 'bch' ? '💸' : '🎨'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Steps */}
+                    <div className="w-full space-y-3">
+                      {[
+                        { id: 'ai', label: 'AI Vision Verifying', sub: 'Analyzing your proof photo...' },
+                        { id: 'bch', label: 'Sending BCH Reward', sub: `Transferring ${selectedBounty?.rewardBCH} BCH on-chain...` },
+                        { id: 'nft', label: 'Minting NFT Badge', sub: 'Creating your CashToken NFT badge...' },
+                      ].map((step, i) => {
+                        const stepOrder = ['ai', 'bch', 'nft', 'done'];
+                        const currentIdx = stepOrder.indexOf(mintStep);
+                        const stepIdx = stepOrder.indexOf(step.id);
+                        const isDone = currentIdx > stepIdx;
+                        const isActive = currentIdx === stepIdx;
+                        return (
+                          <motion.div
+                            key={step.id}
+                            initial={{ opacity: 0, x: -12 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.12 }}
+                            className={cn(
+                              'flex items-center gap-4 p-3 rounded-2xl border transition-all',
+                              isDone
+                                ? 'border-[#CCFF00]/30 bg-[#CCFF00]/10'
+                                : isActive
+                                ? 'border-[#CCFF00]/50 bg-[#CCFF00]/5'
+                                : 'border-white/5 bg-white/5 opacity-40'
+                            )}
+                          >
+                            <div className={cn(
+                              'w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold',
+                              isDone ? 'bg-[#CCFF00] text-black' : isActive ? 'bg-[#CCFF00]/20 text-[#CCFF00]' : 'bg-white/5 text-white/20'
+                            )}>
+                              {isDone ? '✓' : isActive ? (
+                                <motion.span
+                                  animate={{ opacity: [1, 0.3, 1] }}
+                                  transition={{ duration: 1, repeat: Infinity }}
+                                >{i + 1}</motion.span>
+                              ) : i + 1}
+                            </div>
+                            <div className="text-left">
+                              <div className={cn('text-sm font-bold', isDone ? 'text-[#CCFF00]' : isActive ? 'text-white' : 'text-white/30')}>
+                                {step.label}
+                              </div>
+                              {isActive && (
+                                <div className="text-xs text-white/40 mt-0.5">{step.sub}</div>
+                              )}
+                              {isDone && (
+                                <div className="text-xs text-[#CCFF00]/60 mt-0.5">Complete ✓</div>
+                              )}
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+
                 {/* ── SUCCESS STATE ── */}
                 {submitStatus === 'success' && (
                   <motion.div
@@ -833,7 +928,7 @@ export default function VisionVaultApp() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-                    className="flex flex-col items-center py-6 gap-6 text-center"
+                    className="flex flex-col items-center py-6 gap-5 text-center"
                   >
                     {/* Badge loot-box reveal */}
                     <div className="relative flex items-center justify-center">
@@ -884,7 +979,7 @@ export default function VisionVaultApp() {
                         <span className="text-[#CCFF00] font-semibold">
                           {selectedBounty.rewardBadge}
                         </span>{' '}
-                        badge + {selectedBounty.rewardBCH} BCH sent to your wallet.
+                        NFT badge + {selectedBounty.rewardBCH} BCH sent to your wallet on BCH!
                       </p>
                     </motion.div>
 
@@ -898,10 +993,11 @@ export default function VisionVaultApp() {
                         <Medal className="h-3.5 w-3.5" /> {selectedBounty.rewardBadge} NFT
                       </span>
                       <span className="flex items-center gap-1.5 rounded-full border border-[#CCFF00]/40 bg-[#CCFF00]/10 px-3 py-1.5 text-xs font-medium text-[#CCFF00]">
-                        <Coins className="h-3.5 w-3.5" /> {selectedBounty.rewardBCH} BCH
+                        <Coins className="h-3.5 w-3.5" /> {selectedBounty.rewardBCH} BCH Sent
                       </span>
                     </motion.div>
 
+                    {/* Recipient address */}
                     {bchAddress && (
                       <motion.div
                         initial={{ opacity: 0 }}
@@ -909,25 +1005,68 @@ export default function VisionVaultApp() {
                         transition={{ delay: 0.85 }}
                         className="w-full space-y-1"
                       >
-                        <p className="text-xs text-white/40">Sent to</p>
+                        <p className="text-xs text-white/40">Funds sent to</p>
                         <p className="font-mono text-xs text-[#CCFF00] break-all px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
                           {bchAddress}
                         </p>
                       </motion.div>
                     )}
 
-                    {txId && (
+                    {/* BCH Payment TX */}
+                    {paymentTxId && (
                       <motion.a
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ delay: 1.0 }}
-                        href={`https://blockchair.com/bitcoin-cash/transaction/${txId}`}
+                        transition={{ delay: 0.95 }}
+                        href={`https://blockchair.com/bitcoin-cash/transaction/${paymentTxId}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 rounded-full border border-[#CCFF00]/40 bg-[#CCFF00]/10 px-4 py-2 text-sm font-medium text-[#CCFF00] transition hover:bg-[#CCFF00]/20"
+                        className="w-full flex items-center justify-between gap-2 rounded-2xl border border-[#CCFF00]/30 bg-[#CCFF00]/5 px-4 py-3 text-sm font-medium text-[#CCFF00] transition hover:bg-[#CCFF00]/15"
                       >
-                        View on Block Explorer <ExternalLink className="h-4 w-4" />
+                        <div className="flex items-center gap-2">
+                          <Coins className="h-4 w-4 shrink-0" />
+                          <div className="text-left">
+                            <div className="text-xs font-bold">BCH Payment TX</div>
+                            <div className="text-[10px] text-[#CCFF00]/60 font-mono">{paymentTxId.slice(0, 20)}...</div>
+                          </div>
+                        </div>
+                        <ExternalLink className="h-4 w-4 shrink-0" />
                       </motion.a>
+                    )}
+
+                    {/* NFT Mint TX */}
+                    {nftTxId && (
+                      <motion.a
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 1.05 }}
+                        href={`https://chipnet.imaginary.cash/tx/${nftTxId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-between gap-2 rounded-2xl border border-purple-500/30 bg-purple-500/5 px-4 py-3 text-sm font-medium text-purple-300 transition hover:bg-purple-500/15"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Medal className="h-4 w-4 shrink-0" />
+                          <div className="text-left">
+                            <div className="text-xs font-bold">NFT Badge Minted 🎨</div>
+                            <div className="text-[10px] text-purple-300/60 font-mono">{nftTxId.slice(0, 20)}...</div>
+                          </div>
+                        </div>
+                        <ExternalLink className="h-4 w-4 shrink-0" />
+                      </motion.a>
+                    )}
+
+                    {/* No txids yet — show pending */}
+                    {!paymentTxId && !nftTxId && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.9 }}
+                        className="flex items-start gap-2 rounded-xl border border-blue-500/20 bg-blue-500/10 p-3 text-left w-full"
+                      >
+                        <Loader2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-400 animate-spin" />
+                        <p className="text-xs text-blue-200">Processing on-chain transactions — this may take a few seconds.</p>
+                      </motion.div>
                     )}
 
                     {paymentWarning && (
@@ -1097,7 +1236,7 @@ export default function VisionVaultApp() {
                           {submitStatus === 'loading' ? (
                             <>
                               <Loader2 className="animate-spin" />
-                              AI Verifying...
+                              {mintStep === 'ai' ? 'AI Verifying...' : mintStep === 'bch' ? 'Sending BCH...' : 'Minting NFT...'}
                             </>
                           ) : (
                             'Verify & Claim Bounty ⚡'
