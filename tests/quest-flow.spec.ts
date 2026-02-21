@@ -1,39 +1,66 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
+import fs from 'fs';
 
-test('VisionVault Full User Journey', async ({ page }) => {
-  // 1. Navigate to the app
-  // Ensure the local server is running (e.g. npm run dev) before running this test
+// ── Smoke tests — verify pages load correctly ─────────────────────────────
+// These tests run against the production build on GitHub Actions.
+// They are "smoke tests" only — they do not test the actual BCH/AI flow
+// (which requires a funded testnet wallet and HuggingFace API).
+
+test('Home page loads with VisionVault branding', async ({ page }) => {
   await page.goto('http://localhost:3000');
+  // The app title should be present
+  await expect(page).toHaveTitle(/VisionVault/i);
+  console.log('✓ Home page loads OK');
+});
 
-  // Assert page title or header
-  await expect(page.locator('h1')).toContainText('VisionVault');
+test('Landing page loads correctly', async ({ page }) => {
+  await page.goto('http://localhost:3000/landing');
+  await expect(page).toHaveTitle(/VisionVault/i);
+  // Hero heading should be visible
+  await expect(page.locator('h1').first()).toBeVisible();
+  console.log('✓ Landing page loads OK');
+});
 
-  // 2. Fill in the Bitcoin Cash address
-  const bchInput = page.getByPlaceholder('bitcoincash:qp3wjpa3...');
-  await bchInput.fill('bchtest:qqvd7728rcvanul5f5qw6hsxa3nfkp4qzutmpuamkn');
-  
-  // 3. Upload the test image
-  // The file input is hidden, so we use setInputFiles on the file type input locator
-  const fileInput = page.locator('input[type="file"]');
-  await fileInput.setInputFiles('test-image.jpg');
+test('Landing nav links are present', async ({ page }) => {
+  await page.goto('http://localhost:3000/landing');
+  // Check that key nav elements exist
+  await expect(page.getByRole('link', { name: /launch app/i }).first()).toBeVisible();
+  console.log('✓ Landing nav links OK');
+});
 
-  // Assert that file name appears (UI feedback)
-  await expect(page.getByText('test-image.jpg')).toBeVisible();
+test('Pricing page loads', async ({ page }) => {
+  await page.goto('http://localhost:3000/landing/pricing');
+  await expect(page.locator('h1').first()).toBeVisible();
+  console.log('✓ Pricing page loads OK');
+});
 
-  // 4. Click Verify & Claim
-  const verifyButton = page.getByRole('button', { name: 'Verify & Claim Bounty' });
-  await verifyButton.click();
+test('FAQ page loads', async ({ page }) => {
+  await page.goto('http://localhost:3000/landing/faq');
+  await expect(page.locator('h1').first()).toBeVisible();
+  console.log('✓ FAQ page loads OK');
+});
 
-  // 5. Assert Loading State
-  await expect(page.getByText('Verifying with Vision AI...')).toBeVisible();
+test('About page loads', async ({ page }) => {
+  await page.goto('http://localhost:3000/landing/about');
+  await expect(page.locator('h1').first()).toBeVisible();
+  console.log('✓ About page loads OK');
+});
 
-  // 6. Assert Success State
-  // This can take a few seconds due to API calls
-  await expect(page.getByText('Verification Complete!', { exact: false })).toBeVisible({ timeout: 15000 });
-  
-  // 7. Assert Transaction Link availability
-  await expect(page.getByRole('link', { name: 'View on Block Explorer' })).toBeVisible();
-  
-  console.log('Test completed successfully!');
+test('Contact page loads', async ({ page }) => {
+  await page.goto('http://localhost:3000/landing/contact');
+  await expect(page.locator('h1').first()).toBeVisible();
+  console.log('✓ Contact page loads OK');
+});
+
+test('Privacy page loads', async ({ page }) => {
+  await page.goto('http://localhost:3000/landing/privacy');
+  await expect(page.locator('h1').first()).toBeVisible();
+  console.log('✓ Privacy page loads OK');
+});
+
+test('Terms page loads', async ({ page }) => {
+  await page.goto('http://localhost:3000/landing/terms');
+  await expect(page.locator('h1').first()).toBeVisible();
+  console.log('✓ Terms page loads OK');
 });
