@@ -1,0 +1,7 @@
+{
+  "name": "BountyProof",
+  "description": "Verify community engagement with AI-powered bounty proof and instant BCH rewards.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
