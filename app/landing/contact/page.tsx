@@ -47,7 +47,7 @@ export default function ContactPage() {
               Contact & Support
             </div>
             <h1 className="font-black tracking-tighter mb-4" style={{ fontSize: "clamp(2.5rem,6vw,4.5rem)" }}>
-              We're here<br /><span style={{ color: "#CCFF00" }}>to help</span>
+              We&apos;re here<br /><span style={{ color: "#CCFF00" }}>to help</span>
             </h1>
             <p className="text-lg" style={{ color: "rgba(255,255,255,0.5)" }}>
               Found a bug? Have a partnership idea? Just want to say hi? We read every message.
@@ -105,7 +105,7 @@ export default function ContactPage() {
                 <div className="text-5xl mb-4">🎉</div>
                 <h3 className="font-black text-xl mb-2">Message sent!</h3>
                 <p className="text-sm" style={{ color: "rgba(255,255,255,0.55)" }}>
-                  Thanks for reaching out. We'll get back to you within 24–48 hours.
+                  Thanks for reaching out. We&apos;ll get back to you within 24–48 hours.
                 </p>
               </motion.div>
             ) : (

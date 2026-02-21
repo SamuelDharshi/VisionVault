@@ -180,7 +180,7 @@ export default function PricingPage() {
             <h3 className="font-black text-xl mb-3">How the economics work</h3>
             <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>
               VisionVault is a <strong style={{ color: "white" }}>protocol</strong>, not a service. Bounty creators deposit BCH directly into a sponsor wallet.
-              When a claim is verified by AI, &nbsp;BCH is sent peer-to-peer from the sponsor wallet to the winner's wallet.
+              When a claim is verified by AI, &nbsp;BCH is sent peer-to-peer from the sponsor wallet to the winner&apos;s wallet.
               We never hold funds. The 0.1 BCH listing fee goes to platform maintenance and
               AI inference costs.
             </p>

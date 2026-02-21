@@ -123,7 +123,7 @@ function AppMockup() {
         </div>
 
         {/* BCH Balance Card */}
-        <div className="rounded-[1.5rem] p-5 mb-4" style={{ background: "linear-gradient(135deg,#CCFF00,#99CC00)" }}>
+        <div className="rounded-3xl p-5 mb-4" style={{ background: "linear-gradient(135deg,#CCFF00,#99CC00)" }}>
           <div className="text-xs font-bold mb-1" style={{ color: "rgba(0,0,0,0.5)" }}>BCH VAULT</div>
           <div className="text-3xl font-black mb-4" style={{ color: "#000" }}>0.43 BCH</div>
           <div className="flex gap-2">
@@ -211,7 +211,7 @@ export default function LandingHomePage() {
             {/* Sub */}
             <p className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-10"
               style={{ color: "rgba(255,255,255,0.55)" }}>
-              VisionVault is the world's first <strong style={{ color: "white" }}>AI-powered bounty platform</strong> on Bitcoin Cash.
+              VisionVault is the world&apos;s first <strong style={{ color: "white" }}>AI-powered bounty platform</strong> on Bitcoin Cash.
               Upload a proof photo, get verified by AI in seconds, and receive instant BCH rewards + an NFT badge — no middlemen, no delays.
             </p>
 
@@ -314,7 +314,7 @@ export default function LandingHomePage() {
               Everything you need to <span style={{ color: "#CCFF00" }}>earn on-chain</span>
             </h2>
             <p className="text-lg max-w-xl mx-auto" style={{ color: "rgba(255,255,255,0.45)" }}>
-              We didn't just build another app. We built a trustless loop — real-world action → AI verification → instant settlement.
+              We didn&apos;t just build another app. We built a trustless loop — real-world action → AI verification → instant settlement.
             </p>
           </div>
 
@@ -384,7 +384,7 @@ export default function LandingHomePage() {
           <div className="text-center mt-12">
             <Link href="/" className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-105"
               style={{ background: "#CCFF00", color: "#000" }}>
-              Try It Now — It's Free →
+              Try It Now — It&apos;s Free →
             </Link>
           </div>
         </div>
@@ -404,7 +404,7 @@ export default function LandingHomePage() {
               Earn at <span style={{ color: "#CCFF00" }}>real-world events</span>
             </h2>
             <p className="text-lg max-w-xl mx-auto" style={{ color: "rgba(255,255,255,0.45)" }}>
-              Attend a BCH conference, prove you were there, collect your reward. It's that simple.
+              Attend a BCH conference, prove you were there, collect your reward. It&apos;s that simple.
             </p>
           </div>
 
@@ -536,7 +536,7 @@ export default function LandingHomePage() {
           </h2>
           <p className="text-lg mb-10" style={{ color: "rgba(255,255,255,0.5)" }}>
             No wallet? No problem. Get a free BCH testnet wallet and start earning in minutes.
-            Your proof is worth BCH — don't leave it on the table.
+            Your proof is worth BCH — don&apos;t leave it on the table.
           </p>
           <Link href="/"
             className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-xl transition-all hover:scale-105 active:scale-95"
