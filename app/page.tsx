@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { cn } from '@/lib/utils';
-import { Bounty, User, SAMPLE_BOUNTIES } from '@/lib/types';
+import { Bounty, User, SAMPLE_BOUNTIES, CRYPTO_EVENTS, SAMPLE_TRANSACTIONS } from '@/lib/types';
 
 type SubmitStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -56,6 +56,14 @@ export default function VisionVaultApp() {
   const [errorMessage, setErrorMessage] = useState('');
   const [txId, setTxId] = useState('');
   const [paymentWarning, setPaymentWarning] = useState('');
+
+  // ─── New tab state ────────────────────────────────────────────────────────
+  const [walletAddress, setWalletAddress] = useState('');
+  const [isWalletConnected, setIsWalletConnected] = useState(false);
+  const [tempWalletInput, setTempWalletInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [eventCategory, setEventCategory] = useState('All');
+  const [transactions] = useState(SAMPLE_TRANSACTIONS);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ─── Handlers ────────────────────────────────────────────────────────────────
@@ -135,6 +143,8 @@ export default function VisionVaultApp() {
       formData.append('image', uploadedFile);
       formData.append('prompt', selectedBounty.prompt);
       formData.append('bchAddress', bchAddress);
+      formData.append('rewardBCH', selectedBounty.rewardBCH.toString());
+
 
       const res = await fetch('/api/verify', { method: 'POST', body: formData });
       const data = await res.json();
@@ -222,7 +232,11 @@ export default function VisionVaultApp() {
       </header>
 
       {/* ─── Main Content ──────────────────────────────────────────────────── */}
-      <main className="px-6 space-y-6 relative z-10">
+      <main className="px-6 relative z-10">
+
+        {/* ─── HOME TAB ─────────────────────────────────────────────────────── */}
+        {activeTab === 'home' && <div className="space-y-6">
+
         {/* Balance Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -347,6 +361,342 @@ export default function VisionVaultApp() {
             ))}
           </div>
         </section>
+        </div>} {/* end home tab */}
+
+        {/* ─── SEARCH / EVENTS TAB ──────────────────────────────────────────── */}
+        {activeTab === 'search' && (
+          <div className="space-y-5 pt-2 pb-10">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Discover Events</h2>
+              <p className="text-sm text-white/40">Global crypto conferences, BCH meetups & hackathons</p>
+            </div>
+
+            {/* Search bar */}
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search events, cities..."
+                className="w-full bg-white/5 border border-white/10 rounded-2xl pl-11 pr-4 py-4 text-sm placeholder:text-white/30 focus:outline-none focus:border-[#CCFF00]/50 transition-colors"
+              />
+            </div>
+
+            {/* Category filter chips */}
+            <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+              {['All', 'Conference', 'Meetup', 'Hackathon', 'Workshop'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setEventCategory(cat)}
+                  className={cn(
+                    'shrink-0 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all',
+                    eventCategory === cat
+                      ? 'bg-[#CCFF00] text-black'
+                      : 'bg-white/5 text-white/40 border border-white/10 hover:border-[#CCFF00]/30'
+                  )}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {/* Event cards */}
+            <div className="space-y-4">
+              {CRYPTO_EVENTS
+                .filter((e) =>
+                  (eventCategory === 'All' || e.category === eventCategory) &&
+                  (searchQuery === '' ||
+                    e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    e.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    e.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())))
+                )
+                .map((event, i) => (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="bento-card cursor-pointer group hover:border-[#CCFF00]/20 transition-all"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-[#CCFF00]/10 border border-[#CCFF00]/20 flex items-center justify-center text-2xl shrink-0">
+                        {event.emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-sm leading-tight truncate">{event.name}</h3>
+                            <p className="text-xs text-white/40 mt-0.5">📍 {event.location}</p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <div className="text-xs font-bold text-[#CCFF00]">+{event.bounty} BCH</div>
+                            <div className="text-[10px] text-white/30 mt-0.5">{event.attendees}</div>
+                          </div>
+                        </div>
+                        <p className="text-xs text-white/50 mt-2 leading-relaxed line-clamp-2">{event.description}</p>
+                        <div className="flex items-center justify-between mt-3">
+                          <div className="flex gap-1 flex-wrap">
+                            <span className="px-2 py-0.5 rounded-full bg-[#CCFF00]/10 text-[10px] text-[#CCFF00] font-bold border border-[#CCFF00]/20">
+                              {event.category}
+                            </span>
+                            {event.tags.slice(0, 2).map((tag) => (
+                              <span key={tag} className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] text-white/40 border border-white/5">{tag}</span>
+                            ))}
+                          </div>
+                          <span className="text-[10px] font-bold text-white/30">{event.date}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              {CRYPTO_EVENTS.filter(e =>
+                (eventCategory === 'All' || e.category === eventCategory) &&
+                (searchQuery === '' || e.name.toLowerCase().includes(searchQuery.toLowerCase()) || e.location.toLowerCase().includes(searchQuery.toLowerCase()))
+              ).length === 0 && (
+                <div className="text-center py-12 text-white/30">
+                  <div className="text-4xl mb-3">🔍</div>
+                  <p className="text-sm">No events found. Try a different search.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── TROPHY / TRANSACTIONS TAB ────────────────────────────────────── */}
+        {activeTab === 'trophy' && (
+          <div className="space-y-5 pt-2 pb-10">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Transaction History</h2>
+              <p className="text-sm text-white/40">Your BCH activity on VisionVault</p>
+            </div>
+
+            {/* Summary stats */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                {
+                  label: 'Received',
+                  value: transactions.filter(t => t.type === 'received').reduce((s, t) => s + t.amount, 0).toFixed(3),
+                  color: '#CCFF00',
+                  icon: '📥',
+                },
+                {
+                  label: 'Sent',
+                  value: transactions.filter(t => t.type === 'sent').reduce((s, t) => s + t.amount, 0).toFixed(3),
+                  color: '#FF6B6B',
+                  icon: '📤',
+                },
+                {
+                  label: 'Net',
+                  value: (
+                    transactions.filter(t => t.type === 'received').reduce((s, t) => s + t.amount, 0) -
+                    transactions.filter(t => t.type === 'sent').reduce((s, t) => s + t.amount, 0)
+                  ).toFixed(3),
+                  color: '#60A5FA',
+                  icon: '💰',
+                },
+              ].map((stat) => (
+                <div key={stat.label} className="bento-card text-center p-4">
+                  <div className="text-xl mb-1">{stat.icon}</div>
+                  <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">{stat.label}</div>
+                  <div className="text-base font-bold" style={{ color: stat.color }}>{stat.value}</div>
+                  <div className="text-[10px] text-white/30">BCH</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Transaction list */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-white/30 uppercase tracking-widest">Recent Transactions</h3>
+              {transactions.map((tx, i) => (
+                <motion.div
+                  key={tx.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="bento-card flex items-center gap-4"
+                >
+                  <div className={cn(
+                    'w-12 h-12 rounded-2xl flex items-center justify-center shrink-0',
+                    tx.type === 'received' ? 'bg-[#CCFF00]/10' : 'bg-red-500/10'
+                  )}>
+                    {tx.type === 'received'
+                      ? <ArrowDownLeft size={20} className="text-[#CCFF00]" />
+                      : <ArrowUpRight size={20} className="text-red-400" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-bold truncate">{tx.desc}</div>
+                    <div className="text-xs text-white/30 mt-0.5">{tx.date}</div>
+                    {tx.txid && (
+                      <a
+                        href={`https://blockchair.com/bitcoin-cash/transaction/${tx.txid}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-[#CCFF00]/50 hover:text-[#CCFF00] transition-colors mt-0.5 flex items-center gap-1"
+                      >
+                        <ExternalLink size={10} />
+                        {tx.txid.slice(0, 18)}...
+                      </a>
+                    )}
+                  </div>
+                  <div className={cn(
+                    'text-sm font-bold shrink-0',
+                    tx.type === 'received' ? 'text-[#CCFF00]' : 'text-red-400'
+                  )}>
+                    {tx.type === 'received' ? '+' : '-'}{tx.amount} BCH
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── PROFILE TAB ──────────────────────────────────────────────────── */}
+        {activeTab === 'profile' && (
+          <div className="space-y-5 pt-2 pb-10">
+
+            {/* Avatar + name */}
+            <div className="flex flex-col items-center py-6 gap-3">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-[2rem] bg-[#CCFF00] overflow-hidden border-4 border-[#CCFF00]/30">
+                  <img
+                    src="https://picsum.photos/seed/satoshi/200/200"
+                    alt="Profile"
+                    className="w-full h-full object-cover grayscale"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                {isWalletConnected && (
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#CCFF00] flex items-center justify-center">
+                    <span className="text-[10px] font-bold text-black">✓</span>
+                  </div>
+                )}
+              </div>
+              <div className="text-center">
+                <h2 className="text-2xl font-bold">{user.username}</h2>
+                <p className="text-sm text-white/40">BCH Bounty Hunter</p>
+                {isWalletConnected && (
+                  <p className="text-xs text-[#CCFF00] mt-1 font-mono">{walletAddress.slice(0, 16)}...{walletAddress.slice(-6)}</p>
+                )}
+              </div>
+              <div className="flex gap-8 mt-2">
+                {[
+                  { label: 'Bounties', value: user.completedBounties.length },
+                  { label: 'Badges', value: user.badges.length },
+                  { label: 'BCH', value: transactions.filter(t => t.type === 'received').reduce((s, t) => s + t.amount, 0).toFixed(2) },
+                ].map((stat) => (
+                  <div key={stat.label} className="text-center">
+                    <div className="text-xl font-bold text-[#CCFF00]">{stat.value}</div>
+                    <div className="text-[10px] text-white/30 uppercase tracking-widest">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Wallet Connect */}
+            <div className="bento-card">
+              <div className="flex items-center gap-2 mb-4">
+                <Wallet size={16} className="text-[#CCFF00]" />
+                <span className="text-sm font-bold uppercase tracking-widest text-white/40">BCH Wallet</span>
+              </div>
+              {isWalletConnected ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-[#CCFF00] animate-pulse" />
+                    <span className="text-xs text-[#CCFF00] font-bold">Wallet Connected</span>
+                  </div>
+                  <div className="font-mono text-xs text-white/60 bg-white/5 rounded-xl p-3 break-all border border-white/10">
+                    {walletAddress}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <a
+                      href={`https://explorer.bitcoinunlimited.info/address/${walletAddress}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 py-3 rounded-2xl bg-[#CCFF00]/10 border border-[#CCFF00]/20 text-[#CCFF00] text-xs font-bold transition-all hover:bg-[#CCFF00]/20"
+                    >
+                      <ExternalLink size={12} /> View on Chain
+                    </a>
+                    <button
+                      onClick={() => { setIsWalletConnected(false); setWalletAddress(''); setTempWalletInput(''); }}
+                      className="py-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold transition-all hover:bg-red-500/20"
+                    >
+                      Disconnect
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs text-white/40 leading-relaxed">
+                    Connect your BCH testnet wallet to auto-fill your address when claiming bounties.
+                  </p>
+                  <input
+                    value={tempWalletInput}
+                    onChange={(e) => setTempWalletInput(e.target.value)}
+                    placeholder="Paste your bchtest:qq... address"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 font-mono text-xs placeholder:text-white/20 focus:outline-none focus:border-[#CCFF00]/50 transition-colors"
+                  />
+                  <button
+                    onClick={() => {
+                      if (tempWalletInput.length > 15) {
+                        setWalletAddress(tempWalletInput.trim());
+                        setIsWalletConnected(true);
+                      }
+                    }}
+                    disabled={tempWalletInput.length < 15}
+                    className={cn(
+                      'w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2',
+                      tempWalletInput.length >= 15
+                        ? 'bg-[#CCFF00] text-black electric-glow'
+                        : 'bg-white/5 text-white/20 cursor-not-allowed'
+                    )}
+                  >
+                    <Wallet size={16} /> Connect Wallet ⚡
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Badges Gallery */}
+            <div className="bento-card">
+              <div className="flex items-center gap-2 mb-4">
+                <Trophy size={16} className="text-[#CCFF00]" />
+                <span className="text-sm font-bold uppercase tracking-widest text-white/40">My Badges</span>
+              </div>
+              {user.badges.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {user.badges.map((badge, i) => (
+                    <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#CCFF00]/10 border border-[#CCFF00]/20">
+                      <Medal size={14} className="text-[#CCFF00]" />
+                      <span className="text-xs font-bold text-[#CCFF00]">{badge}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-white/30 text-center py-4">Complete bounties to earn badges! 🏆</p>
+              )}
+            </div>
+
+            {/* App Info */}
+            <div className="bento-card space-y-1">
+              {[
+                { label: 'Network', value: 'BCH Testnet', icon: '🌐' },
+                { label: 'App Version', value: 'v0.1.0 — VisionVault', icon: '📦' },
+                { label: 'AI Verifier', value: 'HuggingFace BLIP', icon: '🤖' },
+                { label: 'Smart Contract', value: 'mainnet-js TestNet', icon: '⚡' },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+                  <div className="flex items-center gap-2">
+                    <span>{item.icon}</span>
+                    <span className="text-sm text-white/60">{item.label}</span>
+                  </div>
+                  <span className="text-xs font-bold text-white/30">{item.value}</span>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        )}
+
       </main>
 
       {/* ─── Create Bounty Modal ───────────────────────────────────────────── */}
