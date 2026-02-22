@@ -145,7 +145,7 @@ export default function PricingPage() {
                     {plan.cta} →
                   </Link>
                 ) : (
-                  <Link href="/"
+                  <Link href="/app"
                     className="w-full py-4 rounded-2xl font-bold text-center mb-8 block transition-all hover:scale-105"
                     style={{ background: plan.highlight ? "#CCFF00" : "rgba(255,255,255,0.08)", color: plan.highlight ? "#000" : "white" }}>
                     {plan.cta} {plan.highlight ? "⚡" : "→"}

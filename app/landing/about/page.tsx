@@ -158,7 +158,7 @@ export default function AboutPage() {
             Contribute, build a bounty, or just start earning. The ecosystem is open to everyone.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/" className="px-8 py-4 rounded-2xl font-bold transition-all hover:scale-105"
+            <Link href="/app" className="px-8 py-4 rounded-2xl font-bold transition-all hover:scale-105"
               style={{ background: "#CCFF00", color: "#000" }}>
               Launch App ⚡
             </Link>

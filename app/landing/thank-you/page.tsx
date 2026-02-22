@@ -48,7 +48,7 @@ export default function ThankYouPage() {
 
         {/* CTA */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link href="/"
+          <Link href="/app"
             className="px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-105"
             style={{ background: "#CCFF00", color: "#000", boxShadow: "0 0 40px rgba(204,255,0,0.3)" }}>
             ⚡ Launch App Now →

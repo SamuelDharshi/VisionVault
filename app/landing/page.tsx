@@ -63,7 +63,7 @@ const TESTIMONIALS = [
     name: "Satoshi N.",
     role: "BCH Developer",
     avatar: "🧑‍💻",
-    text: "I submitted a meetup selfie, the AI verified it, and had 0.05 BCH in my wallet within 10 seconds. That's genuinely insane.",
+    text: "I submitted a meetup selfie, the AI verified it, and had 0.002 BCH in my wallet within 10 seconds. That's genuinely insane.",
     stars: 5,
   },
   {
@@ -85,7 +85,7 @@ const TESTIMONIALS = [
 const STATS = [
   { value: "< 5s", label: "AI Verification", icon: "⚡" },
   { value: "100%", label: "On-Chain Payouts", icon: "🔗" },
-  { value: "0.05–0.50", label: "BCH per Bounty", icon: "₿" },
+  { value: "0.002–0.02", label: "BCH per Bounty", icon: "₿" },
   { value: "FREE", label: "To Participate", icon: "🎁" },
 ];
 
@@ -135,9 +135,9 @@ function AppMockup() {
         {/* Bounties */}
         <div className="text-xs font-bold mb-3 px-1" style={{ color: "rgba(255,255,255,0.3)" }}>ACTIVE BOUNTIES</div>
         {[
-          { icon: "📸", title: "BCH Meetup Photo", reward: "+0.05 BCH", badge: "Community Pioneer" },
-          { icon: "🏪", title: "Merchant Adoption", reward: "+0.10 BCH", badge: "Merchant Scout" },
-          { icon: "💻", title: "Code Contribution", reward: "+0.25 BCH", badge: "Code Warrior" },
+          { icon: "📸", title: "BCH Meetup Photo", reward: "+0.002 BCH", badge: "Community Pioneer" },
+          { icon: "🏦", title: "Merchant Adoption", reward: "+0.004 BCH", badge: "Merchant Scout" },
+          { icon: "💻", title: "Code Contribution", reward: "+0.01 BCH", badge: "Code Warrior" },
         ].map((b, i) => (
           <div key={i} className="flex items-center gap-3 rounded-2xl p-3 mb-2 border"
             style={{ background: "rgba(255,255,255,0.03)", borderColor: "rgba(255,255,255,0.06)" }}>
@@ -173,16 +173,31 @@ export default function LandingHomePage() {
     <div style={{ overflowX: "hidden" }}>
       {/* ── BACKGROUND ──────────────────────────────────────────────── */}
       <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+        {/* Base grid lines */}
         <div style={{
           position: "absolute", inset: 0,
-          backgroundImage: `linear-gradient(rgba(204,255,0,0.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(204,255,0,0.025) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(rgba(204,255,0,0.12) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(204,255,0,0.12) 1px, transparent 1px)`,
           backgroundSize: "60px 60px",
         }} />
+        {/* Neon glow layer — blurred duplicate for the bloom effect */}
+        <div style={{
+          position: "absolute", inset: 0,
+          backgroundImage: `linear-gradient(rgba(204,255,0,0.06) 2px, transparent 2px),
+            linear-gradient(90deg, rgba(204,255,0,0.06) 2px, transparent 2px)`,
+          backgroundSize: "60px 60px",
+          filter: "blur(3px)",
+        }} />
+        {/* Dark radial vignette — keeps content readable, fades grid toward edges */}
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "radial-gradient(ellipse 80% 60% at 50% 0%, transparent 30%, #000 100%)",
+        }} />
+        {/* Hero centre glow */}
         <div style={{
           position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-          width: 900, height: 600,
-          background: "radial-gradient(ellipse at center, rgba(204,255,0,0.06) 0%, transparent 70%)",
+          width: 1000, height: 700,
+          background: "radial-gradient(ellipse at center, rgba(204,255,0,0.10) 0%, transparent 65%)",
         }} />
       </div>
 
@@ -217,7 +232,7 @@ export default function LandingHomePage() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
-              <Link href="/" className="group px-8 py-4 rounded-2xl font-black text-lg flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
+              <Link href="/app" className="group px-8 py-4 rounded-2xl font-black text-lg flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
                 style={{ background: "#CCFF00", color: "#000", boxShadow: "0 0 40px rgba(204,255,0,0.35)" }}>
                 🚀 Start Earning Free
                 <span className="group-hover:translate-x-1 transition-transform">→</span>
@@ -382,7 +397,7 @@ export default function LandingHomePage() {
           </div>
 
           <div className="text-center mt-12">
-            <Link href="/" className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-105"
+            <Link href="/app" className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg transition-all hover:scale-105"
               style={{ background: "#CCFF00", color: "#000" }}>
               Try It Now — It&apos;s Free →
             </Link>
@@ -432,7 +447,7 @@ export default function LandingHomePage() {
           </div>
 
           <div className="text-center">
-            <Link href="/" className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold border transition-all hover:border-yellow-400/30"
+            <Link href="/app" className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold border transition-all hover:border-yellow-400/30"
               style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.1)", color: "white" }}>
               Explore All Events in App →
             </Link>
@@ -538,7 +553,7 @@ export default function LandingHomePage() {
             No wallet? No problem. Get a free BCH testnet wallet and start earning in minutes.
             Your proof is worth BCH — don&apos;t leave it on the table.
           </p>
-          <Link href="/"
+          <Link href="/app"
             className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-xl transition-all hover:scale-105 active:scale-95"
             style={{ background: "#CCFF00", color: "#000", boxShadow: "0 0 60px rgba(204,255,0,0.4)" }}>
             <span>⚡</span>

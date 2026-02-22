@@ -77,7 +77,7 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
 
           {/* CTA */}
           <div className="flex items-center gap-3">
-            <Link href="/" className="hidden md:block px-5 py-2 rounded-xl text-sm font-bold transition-all"
+            <Link href="/app" className="hidden md:block px-5 py-2 rounded-xl text-sm font-bold transition-all"
               style={{ background: "#CCFF00", color: "#000" }}>
               Launch App ⚡
             </Link>
@@ -101,7 +101,7 @@ export default function LandingLayout({ children }: { children: React.ReactNode 
                 {item.label}
               </Link>
             ))}
-            <Link href="/" className="block mt-3 px-4 py-3 rounded-xl text-sm font-bold text-center"
+            <Link href="/app" className="block mt-3 px-4 py-3 rounded-xl text-sm font-bold text-center"
               style={{ background: "#CCFF00", color: "#000" }}>
               Launch App ⚡
             </Link>

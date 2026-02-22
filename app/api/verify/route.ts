@@ -4,19 +4,20 @@ import { TestNetWallet, NFTCapability, TokenGenesisRequest } from 'mainnet-js';
 // ── AI Vision: calls Hugging Face's free Inference API ─────────────────────
 // Model: Salesforce/blip-image-captioning-large (free, no quota issues)
 async function verifyImageWithAI(base64Image: string, mimeType: string, prompt: string): Promise<boolean> {
-  const hfToken = process.env.HF_TOKEN; // optional — works without token too (slower)
+  const hfToken = process.env.HF_TOKEN; // required for router.huggingface.co
+  if (!hfToken) console.warn('[VisionVault] HF_TOKEN is not set — the new HF router requires a token. Add HF_TOKEN to .env.local');
 
   // Convert base64 to binary blob
   const binaryStr = Buffer.from(base64Image, 'base64');
 
   const fetchCaption = async () => {
     const res = await fetch(
-      'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large',
+      'https://router.huggingface.co/hf-inference/models/Salesforce/blip-image-captioning-large',
       {
         method: 'POST',
         headers: {
           'Content-Type': mimeType,
-          ...(hfToken ? { Authorization: `Bearer ${hfToken}` } : {}),
+          Authorization: `Bearer ${hfToken ?? ''}`,
         },
         body: binaryStr,
       }

@@ -12,7 +12,7 @@ const FAQS = [
   { cat: "Getting Started", q: "Is VisionVault on mainnet?", a: "Currently VisionVault runs on BCH Testnet (Chipnet) for safety during the hackathon phase. Mainnet launch is planned for mid-2026 after thorough security audits." },
   // Bounties
   { cat: "Bounties", q: "What kinds of bounties are available?", a: "Bounties cover real-world BCH events: meetups, conferences, hackathons, merchant adoption demonstrations, community service tasks, and developer contributions. New bounties are added by event organizers." },
-  { cat: "Bounties", q: "How much BCH can I earn per bounty?", a: "Rewards range from 0.05 BCH for basic participation bounties to 0.50 BCH for major conference attendance or significant contributions. Each bounty clearly states the reward upfront." },
+  { cat: "Bounties", q: "How much BCH can I earn per bounty?", a: "Rewards range from 0.002 BCH for basic participation bounties to 0.02 BCH for major conference attendance or significant contributions. Each bounty clearly states the reward upfront." },
   { cat: "Bounties", q: "Can I claim the same bounty twice?", a: "No. Each bounty is designed as a one-time-per-user claim. This is enforced by the sponsor wallet logic which tracks claimed addresses." },
   { cat: "Bounties", q: "What if there are no bounties near me?", a: "Global bounties (like contributing to open source projects or creating BCH educational content) are available to anyone, anywhere. Location-specific bounties expand as the ecosystem grows." },
   { cat: "Bounties", q: "How are bounties created?", a: "Currently, bounties are seeded by the VisionVault team and hackathon organizers. In future versions, any BCH holder can create and fund a bounty through the Bounty Creator tier." },
