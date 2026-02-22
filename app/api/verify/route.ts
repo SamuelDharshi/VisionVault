@@ -80,6 +80,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── Guard: only accept testnet addresses ────────────────────────────────
+    const isTestnetAddress = userAddress.startsWith('bchtest:') || userAddress.startsWith('bchtestpp:');
+    if (!isTestnetAddress) {
+      return NextResponse.json(
+        { error: '⛔ Mainnet BCH address detected! This app runs on BCH TESTNET only. Use a bchtest:qq... address. Get free testnet BCH at tbch.googol.cash' },
+        { status: 400 }
+      );
+    }
+
     // ── 1. Convert image to base64 ──────────────────────────────────────────
     const buffer = Buffer.from(await file.arrayBuffer());
     const base64Image = buffer.toString('base64');

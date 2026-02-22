@@ -107,9 +107,19 @@ const FAQS_PREVIEW = [
 // ── App Mockup (CSS-only) ───────────────────────────────────────────────────
 function AppMockup() {
   return (
-    <div className="relative mx-auto" style={{ maxWidth: 320 }}>
+    <div className="relative mx-auto" style={{ maxWidth: 320, paddingTop: 24 }}>
       {/* Glow */}
       <div className="absolute inset-0 rounded-[3rem]" style={{ background: "rgba(204,255,0,0.15)", filter: "blur(60px)" }} />
+
+      {/* Success toast — outside overflow-hidden so it's fully visible */}
+      <motion.div
+        initial={{ opacity: 0, y: 10, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ delay: 1, repeat: Infinity, repeatDelay: 3, duration: 0.4 }}
+        className="absolute top-0 right-0 rounded-2xl px-3 py-2 text-xs font-black shadow-xl z-10"
+        style={{ background: "#CCFF00", color: "#000", boxShadow: "0 0 20px rgba(204,255,0,0.5)" }}>
+        ✓ Bounty Approved! 🎉
+      </motion.div>
 
       {/* Phone shell */}
       <div className="relative rounded-[3rem] overflow-hidden border border-white/10"
@@ -150,16 +160,6 @@ function AppMockup() {
             <div className="text-xs font-bold shrink-0" style={{ color: "#CCFF00" }}>{b.reward}</div>
           </div>
         ))}
-
-        {/* Success toast */}
-        <motion.div
-          initial={{ opacity: 0, y: 10, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ delay: 1, repeat: Infinity, repeatDelay: 3, duration: 0.4 }}
-          className="absolute -top-3 -right-3 rounded-2xl px-3 py-2 text-xs font-black shadow-xl"
-          style={{ background: "#CCFF00", color: "#000" }}>
-          ✓ Bounty Approved! 🎉
-        </motion.div>
       </div>
     </div>
   );

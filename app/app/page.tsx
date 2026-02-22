@@ -136,7 +136,9 @@ export default function VisionVaultApp() {
 
   const submitProof = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedBounty || !uploadedFile || !bchAddress) return;
+    if (!selectedBounty || !uploadedFile || (!bchAddress && !walletAddress)) return;
+
+    const effectiveAddress = bchAddress || walletAddress;
 
     setSubmitStatus('loading');
     setErrorMessage('');
@@ -149,7 +151,7 @@ export default function VisionVaultApp() {
       const formData = new FormData();
       formData.append('image', uploadedFile);
       formData.append('prompt', selectedBounty.prompt);
-      formData.append('bchAddress', bchAddress);
+      formData.append('bchAddress', effectiveAddress);
       formData.append('rewardBCH', selectedBounty.rewardBCH.toString());
       formData.append('badgeName', selectedBounty.rewardBadge);
 
@@ -340,7 +342,11 @@ export default function VisionVaultApp() {
               <motion.button
                 key={bounty.id}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => setSelectedBounty(bounty)}
+                onClick={() => {
+                  setSelectedBounty(bounty);
+                  // Auto-fill BCH address from connected wallet
+                  if (walletAddress) setBchAddress(walletAddress);
+                }}
                 className={cn(
                   'w-full text-left bento-card flex items-center gap-4 group relative overflow-hidden',
                   user.completedBounties.includes(bounty.id) && 'opacity-50'
@@ -642,31 +648,38 @@ export default function VisionVaultApp() {
                 </div>
               ) : (
                 <div className="space-y-3">
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                    <span className="text-yellow-400 text-xs">⚠️</span>
+                    <span className="text-xs text-yellow-300 font-bold">TESTNET ONLY — bchtest:qq... addresses only!</span>
+                  </div>
                   <p className="text-xs text-white/40 leading-relaxed">
-                    Connect your BCH testnet wallet to auto-fill your address when claiming bounties.
+                    Connect your BCH <strong className="text-white/60">testnet</strong> wallet. Get free tBCH at tbch.googol.cash.
                   </p>
                   <input
                     value={tempWalletInput}
                     onChange={(e) => setTempWalletInput(e.target.value)}
-                    placeholder="Paste your bchtest:qq... address"
+                    placeholder="bchtest:qq... (TESTNET address only!)"
                     className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 font-mono text-xs placeholder:text-white/20 focus:outline-none focus:border-[#CCFF00]/50 transition-colors"
                   />
+                  {tempWalletInput.length > 5 && !tempWalletInput.startsWith('bchtest:') && (
+                    <p className="text-xs text-red-400 font-bold px-1">⛔ That looks like a mainnet address! Use bchtest:qq... only.</p>
+                  )}
                   <button
                     onClick={() => {
-                      if (tempWalletInput.length > 15) {
+                      if (tempWalletInput.startsWith('bchtest:') && tempWalletInput.length > 15) {
                         setWalletAddress(tempWalletInput.trim());
                         setIsWalletConnected(true);
                       }
                     }}
-                    disabled={tempWalletInput.length < 15}
+                    disabled={!tempWalletInput.startsWith('bchtest:') || tempWalletInput.length < 15}
                     className={cn(
                       'w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2',
-                      tempWalletInput.length >= 15
+                      tempWalletInput.startsWith('bchtest:') && tempWalletInput.length >= 15
                         ? 'bg-[#CCFF00] text-black electric-glow'
                         : 'bg-white/5 text-white/20 cursor-not-allowed'
                     )}
                   >
-                    <Wallet size={16} /> Connect Wallet ⚡
+                    <Wallet size={16} /> Connect Testnet Wallet ⚡
                   </button>
                 </div>
               )}
@@ -1139,20 +1152,35 @@ export default function VisionVaultApp() {
                       </div>
                     ) : (
                       <form onSubmit={submitProof} className="space-y-5">
-                        {/* BCH Address */}
+                        {/* BCH Address — auto from wallet or manual input */}
                         <div className="space-y-2">
                           <label className="flex items-center gap-2 text-sm font-bold text-white/40 uppercase tracking-widest">
                             <Wallet size={14} className="text-[#CCFF00]" />
-                            Your BCH Testnet Address
+                            Payout Address
                           </label>
-                          <input
-                            type="text"
-                            required
-                            placeholder="bchtest:qq... or bitcoincash:qq..."
-                            value={bchAddress}
-                            onChange={(e) => setBchAddress(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 font-mono text-sm placeholder:text-white/20 focus:outline-none focus:border-[#CCFF00]/50 transition-colors"
-                          />
+                          {walletAddress ? (
+                            // Wallet already connected — show it, no input needed
+                            <div className="flex items-center gap-3 bg-[#CCFF00]/8 border border-[#CCFF00]/25 rounded-2xl p-4">
+                              <div className="w-2 h-2 rounded-full bg-[#CCFF00] animate-pulse shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-[10px] font-bold text-[#CCFF00] uppercase tracking-widest mb-0.5">Wallet Connected ✓</div>
+                                <div className="font-mono text-xs text-white/60 truncate">{walletAddress}</div>
+                              </div>
+                            </div>
+                          ) : (
+                            // No wallet — ask for address inline
+                            <div className="space-y-1.5">
+                              <input
+                                type="text"
+                                required
+                                placeholder="bchtest:qq... — or connect wallet in Profile tab"
+                                value={bchAddress}
+                                onChange={(e) => setBchAddress(e.target.value)}
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 font-mono text-sm placeholder:text-white/20 focus:outline-none focus:border-[#CCFF00]/50 transition-colors"
+                              />
+                              <p className="text-[10px] text-white/30 pl-1">💡 Tip: Connect your wallet in the <strong className="text-white/50">Profile</strong> tab to skip this step next time.</p>
+                            </div>
+                          )}
                         </div>
 
                         {/* Image Upload */}
@@ -1225,10 +1253,10 @@ export default function VisionVaultApp() {
                         {/* Submit Button */}
                         <button
                           type="submit"
-                          disabled={!uploadedImage || !bchAddress || submitStatus === 'loading'}
+                          disabled={!uploadedImage || (!bchAddress && !walletAddress) || submitStatus === 'loading'}
                           className={cn(
                             'w-full py-5 rounded-[2rem] font-bold text-lg flex items-center justify-center gap-3 transition-all',
-                            uploadedImage && bchAddress && submitStatus !== 'loading'
+                            uploadedImage && (bchAddress || walletAddress) && submitStatus !== 'loading'
                               ? 'bg-[#CCFF00] text-black electric-glow'
                               : 'bg-white/5 text-white/20 cursor-not-allowed'
                           )}
