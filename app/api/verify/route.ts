@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Wallet, NFTCapability, TokenGenesisRequest } from 'mainnet-js';
+import { Wallet, TestNetWallet, NFTCapability, TokenGenesisRequest, Config } from 'mainnet-js';
+
+// Global network check override for chipnet
+process.env.BCH_NETWORK = 'chipnet';
+(Config as any).network = 'chipnet';
 
 // ── AI Vision: calls Hugging Face's free Inference API ─────────────────────
 // Model: Salesforce/blip-image-captioning-large (free, no quota issues)
@@ -135,8 +139,9 @@ export async function POST(req: NextRequest) {
 
     // ── Step A: Send BCH reward ─────────────────────────────────────────────
     try {
-      // Use 'chipnet' explicitly. TestNetWallet defaults to the old Testnet3.
-      const sponsorWallet = await Wallet.fromSeed(seed, 'chipnet');
+      // Use standard fromSeed with explicit chipnet network string.
+      // This is often more reliable than fromId in older mainnet-js versions.
+      const sponsorWallet = await Wallet.fromSeed(seed, "m/44'/145'/0'/0/0", 'chipnet');
       
       const balanceSats = (await sponsorWallet.getBalance()) as bigint;
       const rewardSats = BigInt(Math.round(rewardBCH * 1e8));
@@ -163,14 +168,14 @@ export async function POST(req: NextRequest) {
       }
     } catch (payErr) {
       const msg = payErr instanceof Error ? payErr.message : String(payErr);
-      console.error('[VisionVault] BCH payment error:', msg);
-      warnings.push(`BCH payment failed: ${msg}`);
+      console.error('[VisionVault] BCH Chipnet payment error:', msg);
+      warnings.push(`Chipnet payment failed: ${msg}`);
     }
 
     // ── Step B: Mint CashToken NFT badge via tokenGenesis ───────────────────
     // tokenGenesis creates a brand-new token category and sends the NFT to `cashaddr`
     try {
-      const mintWallet = await Wallet.fromSeed(seed, 'chipnet');
+      const mintWallet = await Wallet.fromSeed(seed, "m/44'/145'/0'/0/0", 'chipnet');
       const commitment = badgeToCommitment(badgeName);
 
       const genesisReq = new TokenGenesisRequest({

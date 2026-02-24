@@ -272,7 +272,7 @@ export default function VisionVaultApp() {
             </div>
             <span className="text-sm font-bold uppercase tracking-wider opacity-60">CASH</span>
             <div className="ml-auto px-3 py-1 bg-black/10 rounded-full text-[10px] font-bold">
-              BCH Vault
+              Chipnet Vault
             </div>
           </div>
           <div className="text-5xl font-bold tracking-tighter mb-8">
@@ -305,9 +305,9 @@ export default function VisionVaultApp() {
           <button 
             type="button"
             onClick={() => {
-              navigator.clipboard.writeText("bchtest:qqvd7728rcvanul5f5qw6hsxa3nfkp4qzutmpuamkn");
-              alert("Sponsor address copied! Fund it at tbch.googol.cash");
-            }}
+                navigator.clipboard.writeText("bchtest:qqvd7728rcvanul5f5qw6hsxa3nfkp4qzutmpuamkn");
+                alert("Sponsor address copied! Fund it at chipnet.fountainhead.cash");
+              }}
             className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors"
           >
             Fund Vault ⚡
@@ -1048,7 +1048,7 @@ export default function VisionVaultApp() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.95 }}
-                        href={`https://blockchair.com/bitcoin-cash/transaction/${paymentTxId}`}
+                        href={`https://chipnet.imaginary.cash/tx/${paymentTxId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full flex items-center justify-between gap-2 rounded-2xl border border-[#CCFF00]/30 bg-[#CCFF00]/5 px-4 py-3 text-sm font-medium text-[#CCFF00] transition hover:bg-[#CCFF00]/15"
