@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TestNetWallet, NFTCapability, TokenGenesisRequest } from 'mainnet-js';
+import { Wallet, NFTCapability, TokenGenesisRequest } from 'mainnet-js';
 
 // ── AI Vision: calls Hugging Face's free Inference API ─────────────────────
 // Model: Salesforce/blip-image-captioning-large (free, no quota issues)
@@ -89,6 +89,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Basic length check for safety
+    if (userAddress.length < 30) {
+      return NextResponse.json({ error: 'Invalid BCH address format.' }, { status: 400 });
+    }
+
     // ── 1. Convert image to base64 ──────────────────────────────────────────
     const buffer = Buffer.from(await file.arrayBuffer());
     const base64Image = buffer.toString('base64');
@@ -130,24 +135,31 @@ export async function POST(req: NextRequest) {
 
     // ── Step A: Send BCH reward ─────────────────────────────────────────────
     try {
-      const sponsorWallet = await TestNetWallet.fromSeed(seed);
-      // getBalance returns bigint in satoshis for TestNetWallet
-      const balanceSats = await sponsorWallet.getBalance() as bigint;
+      // Use 'chipnet' explicitly. TestNetWallet defaults to the old Testnet3.
+      const sponsorWallet = await Wallet.fromSeed(seed, 'chipnet');
+      
+      const balanceSats = (await sponsorWallet.getBalance()) as bigint;
       const rewardSats = BigInt(Math.round(rewardBCH * 1e8));
       const sponsorAddr = sponsorWallet.getDepositAddress();
-      console.log(`[VisionVault] Sponsor balance: ${balanceSats} sats (${Number(balanceSats) / 1e8} BCH)`);
+      
+      console.log(`[VisionVault] Sponsor Address: ${sponsorAddr}`);
+      console.log(`[VisionVault] Sponsor Balance: ${balanceSats} sats (${Number(balanceSats) / 1e8} BCH)`);
+      console.log(`[VisionVault] Attempting payout of: ${rewardSats} sats to ${userAddress}`);
 
-      if (balanceSats < rewardSats + BigInt(10000)) { // keep 10k sats buffer for fees
-        warnings.push(
-          `Sponsor vault has ${Number(balanceSats) / 1e8} BCH — not enough to pay ${rewardBCH} BCH reward. Fund ${sponsorAddr} at tbch.googol.cash`
-        );
+      if (balanceSats < (rewardSats + BigInt(10000))) { // keep 10k sats buffer for fees
+        const msg = `Sponsor vault has ${Number(balanceSats) / 1e8} BCH — not enough to pay ${rewardBCH} BCH reward. Fund ${sponsorAddr} at tbch.googol.cash`;
+        console.warn(`[VisionVault] ${msg}`);
+        warnings.push(msg);
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // Send using satoshis for maximum precision
+        // We use any cast here because mainnet-js types can be tricky in some environments
         const tx = await (sponsorWallet.send as any)([
-          { cashaddr: userAddress, value: rewardBCH, unit: 'bch' },
+          { cashaddr: userAddress, value: rewardSats, unit: 'sat' },
         ]);
-        paymentTxId = (tx as { txId?: string }).txId ?? null;
-        console.log(`[VisionVault] BCH payment sent: ${paymentTxId}`);
+        
+        // Handle different possible return formats from mainnet-js
+        paymentTxId = (tx as any).txId || (tx as any).txid || null;
+        console.log(`[VisionVault] BCH payment successful! TXID: ${paymentTxId}`);
       }
     } catch (payErr) {
       const msg = payErr instanceof Error ? payErr.message : String(payErr);
@@ -158,7 +170,7 @@ export async function POST(req: NextRequest) {
     // ── Step B: Mint CashToken NFT badge via tokenGenesis ───────────────────
     // tokenGenesis creates a brand-new token category and sends the NFT to `cashaddr`
     try {
-      const mintWallet = await TestNetWallet.fromSeed(seed);
+      const mintWallet = await Wallet.fromSeed(seed, 'chipnet');
       const commitment = badgeToCommitment(badgeName);
 
       const genesisReq = new TokenGenesisRequest({
@@ -177,7 +189,8 @@ export async function POST(req: NextRequest) {
     } catch (nftErr) {
       const msg = nftErr instanceof Error ? nftErr.message : String(nftErr);
       console.error('[VisionVault] NFT mint error:', msg);
-      warnings.push(`NFT badge mint failed (BCH reward still sent): ${msg}`);
+      const suffix = paymentTxId ? '(BCH reward still sent)' : '(BCH reward also failed)';
+      warnings.push(`NFT badge mint failed ${suffix}: ${msg}`);
     }
 
     return NextResponse.json({
