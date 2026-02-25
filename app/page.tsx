@@ -291,28 +291,7 @@ export default function VisionVaultApp() {
           </div>
         </motion.div>
 
-        {/* Sponsor Vault Info (Admin/Creator context) */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#CCFF00]/10 flex items-center justify-center">
-              <Coins size={20} className="text-[#CCFF00]" />
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Sponsor Vault</div>
-              <div className="text-xs font-bold text-white/70 truncate w-32">bchtest:qqvd77...uamkn</div>
-            </div>
-          </div>
-          <button 
-            type="button"
-            onClick={() => {
-                navigator.clipboard.writeText("bchtest:qqvd7728rcvanul5f5qw6hsxa3nfkp4qzutmpuamkn");
-                alert("Sponsor address copied! Fund it at chipnet.fountainhead.cash");
-              }}
-            className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-colors"
-          >
-            Fund Vault ⚡
-          </button>
-        </div>
+
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 gap-4">
