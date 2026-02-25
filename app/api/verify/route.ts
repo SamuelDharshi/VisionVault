@@ -139,9 +139,8 @@ export async function POST(req: NextRequest) {
 
     // ── Step A: Send BCH reward ─────────────────────────────────────────────
     try {
-      // Use standard fromSeed with explicit chipnet network string.
-      // This is often more reliable than fromId in older mainnet-js versions.
-      const sponsorWallet = await Wallet.fromSeed(seed, "m/44'/145'/0'/0/0", 'chipnet');
+      // TestNetWallet is the most reliable way to ensure testnet/chipnet in mainnet-js
+      const sponsorWallet = await TestNetWallet.fromSeed(seed);
       
       const balanceSats = (await sponsorWallet.getBalance()) as bigint;
       const rewardSats = BigInt(Math.round(rewardBCH * 1e8));
@@ -156,13 +155,10 @@ export async function POST(req: NextRequest) {
         console.warn(`[VisionVault] ${msg}`);
         warnings.push(msg);
       } else {
-        // Send using satoshis for maximum precision
-        // We use any cast here because mainnet-js types can be tricky in some environments
-        const tx = await (sponsorWallet.send as any)([
-          { cashaddr: userAddress, value: rewardSats, unit: 'sat' },
+        const tx = await (sponsorWallet as any).send([
+          { cashaddr: userAddress, value: Number(rewardSats), unit: 'sat' },
         ]);
         
-        // Handle different possible return formats from mainnet-js
         paymentTxId = (tx as any).txId || (tx as any).txid || null;
         console.log(`[VisionVault] BCH payment successful! TXID: ${paymentTxId}`);
       }
@@ -175,7 +171,7 @@ export async function POST(req: NextRequest) {
     // ── Step B: Mint CashToken NFT badge via tokenGenesis ───────────────────
     // tokenGenesis creates a brand-new token category and sends the NFT to `cashaddr`
     try {
-      const mintWallet = await Wallet.fromSeed(seed, "m/44'/145'/0'/0/0", 'chipnet');
+      const mintWallet = await TestNetWallet.fromSeed(seed);
       const commitment = badgeToCommitment(badgeName);
 
       const genesisReq = new TokenGenesisRequest({
