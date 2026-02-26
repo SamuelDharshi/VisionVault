@@ -57,3 +57,8 @@ The running demo is on Bitcoin Cash Testnet:
 ---
 
 ## 🛠 Architecture Overview (from workflow)
+![IMG-20260226-WA0013](https://github.com/user-attachments/assets/c71f054a-19f3-42b3-8316-dab6753e8669)
+
+The system ensures bot-resistant bounty validation using AI vision 
+analysis and automated BCH escrow payouts.
+
